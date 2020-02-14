@@ -1,0 +1,118 @@
+https://xkobyx.blogspot.com/2017/05/video-player-using-direct-show-dspack.html
+
+https://youtu.be/nznzV7OIi84
+
+unit MainForm;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ComCtrls, DSPack, ExtCtrls, StdCtrls;
+
+type
+  TfrmMain = class(TForm)
+    Panel1: TPanel;
+    Panel2: TPanel;
+    Open: TButton;
+    Stop: TButton;
+    Play: TButton;
+    Pause: TButton;
+    Timer1: TTimer;
+    OPD: TOpenDialog;
+    FilterGraph1: TFilterGraph;
+    VideoW: TDSVideoWindowEx2;
+    PBar: TProgressBar;
+    procedure OpenClick(Sender: TObject);
+    procedure StopClick(Sender: TObject);
+    procedure PauseClick(Sender: TObject);
+    procedure PlayClick(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
+    procedure PBarMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure PBarMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure FormCreate(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmMain: TfrmMain;
+  PBDown:Boolean=False;
+
+implementation
+
+{$R *.dfm}
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  OPD.InitialDir:=ExtractFilePath(Application.ExeName);
+  FilterGraph1.Active:=True;
+end;
+
+procedure TfrmMain.OpenClick(Sender: TObject);
+begin
+  if OPD.Execute() then begin
+
+    Timer1.Enabled:=False;
+    FilterGraph1.ClearGraph;
+    FilterGraph1.Stop;
+    FilterGraph1.RenderFile(OPD.FileName);
+    PBar.Max:=FilterGraph1.Duration;
+    FilterGraph1.Play;
+    Timer1.Enabled:=True;
+  end;
+end;
+
+procedure TfrmMain.PauseClick(Sender: TObject);
+begin
+  FilterGraph1.Pause;
+  Timer1.Enabled:=False;
+end;
+
+procedure TfrmMain.PBarMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  PBDown:=True;
+end;
+
+procedure TfrmMain.PBarMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+  var
+  Ratio:Real;
+  Total:Integer;
+  Position:Integer;
+begin
+  if PBDown then begin
+    Ratio:=X/PBar.ClientWidth;
+    Total:=Round(PBar.Max-Pbar.Min);
+    Position:=Round((Total*Ratio)+Round(PBar.Min));
+    PBar.Position:=Position;
+    FilterGraph1.Position:=Round(PBar.Position);
+    PBDown:=False;
+  end;
+end;
+
+procedure TfrmMain.PlayClick(Sender: TObject);
+begin
+  FilterGraph1.Play;
+  Timer1.Enabled:=True;
+end;
+
+procedure TfrmMain.StopClick(Sender: TObject);
+begin
+  FilterGraph1.Stop;
+  FilterGraph1.ClearGraph;
+  PBar.Position:=0;
+  Timer1.Enabled:=False;
+end;
+
+procedure TfrmMain.Timer1Timer(Sender: TObject);
+begin
+  PBar.Position:=FilterGraph1.Position;
+end;
+
+end.
